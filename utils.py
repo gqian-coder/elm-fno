@@ -41,8 +41,8 @@ def loadBesElmData(filename, ts_range):
         print(i, init_ts)
     events_[-1] = init_ts
     signals = signals[:, :init_ts+1]
-    signals.tofile('signals_elm.bin') 
-    events_.tofile('event_sep.bin')
+    signals.tofile('signals_elm_100ts.bin') 
+    events_.tofile('event_sep_100ts.bin')
 
 class BESDataset(Dataset):
     def __init__(self, datafile, sepfile, n_channels, obsv_ts, pred_ts):
@@ -57,18 +57,19 @@ class BESDataset(Dataset):
         n_events  = len(self.datasep)-1
         dlen = self.__len__()
         print("total data slices: {}, occupying {} GB mem".format(dlen, dlen*n_channels*(obsv_ts+pred_ts)*4/1e9))
-        self.data_obsv = np.zeros([dlen, obsv_ts, n_channels]).astype('float32')
-        self.data_pred = np.zeros([dlen, pred_ts, n_channels]).astype('float32')
+        self.data_obsv = np.zeros([dlen, n_channels, obsv_ts]).astype('float32')
+        print("create data_obsv")
+        self.data_pred = np.zeros([dlen, n_channels, pred_ts]).astype('float32')
+        print("cerate data_pred")
         idx = 0
         for i in range(n_events):
-            ts   = obsv_ts
             wd   = self.datasep[i+1]-self.datasep[i]
             dp   = self.datasep[i]
             # normalize the data by min and max values per channel, per each event
-            dmax = np.max(self.dataset[:, self.datasep[i]:self.datasep[i+1]], axis=1)
-            dmin = np.min(self.dataset[:, self.datasep[i]:self.datasep[i+1]], axis=1)
-            while (ts+pred_ts<wd):
-                print(i, idx, ts, wd, dp)
+            dmax = np.max(self.dataset[:, self.datasep[i]:self.datasep[i+1]], axis=1).reshape(-1,1)
+            dmin = np.min(self.dataset[:, self.datasep[i]:self.datasep[i+1]], axis=1).reshape(-1,1)
+            while (dp+pred_ts+obsv_ts<wd):
+                print(i, idx, wd, dp)
                 dp_cut = dp+obsv_ts
                 self.data_obsv[idx, :, :] = (self.dataset[:, dp:dp_cut] - dmin) / (dmax-dmin) - 0.5
                 self.data_pred[idx, :, :] = (self.dataset[:, dp_cut:dp_cut+pred_ts] - dmin) / (dmax-dmin) - 0.5 
@@ -91,10 +92,10 @@ class BESDataset(Dataset):
             data_len += int(np.floor((self.datasep[i+1]-self.datasep[i] - self.obsv_ts ) / self.pred_ts))
         return data_len
 
-#loadBesElmData('../d3d_bes_elm_dataset/labeled_elm_events.hdf5', 2000)
+#loadBesElmData('../d3d_bes_elm_dataset/labeled_elm_events.hdf5', 200)
 obsv_ts, pred_ts = 20, 5
 n_channels = 64
-dataset    = BESDataset("signals_elm.bin", "event_sep.bin", n_channels, obsv_ts, pred_ts)
+dataset    = BESDataset("signals_elm_100ts.bin", "event_sep_100ts.bin", n_channels, obsv_ts, pred_ts)
 dataloader = DataLoader(dataset, batch_size=16, shuffle=True, num_workers=1)
 print("number of batches: ", enumerate(dataloader))
 for i_batch, d_batch in enumerate(dataloader):
