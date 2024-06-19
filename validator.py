@@ -44,7 +44,7 @@ class GridValidator:
         self.norm = norm
         self.criterion = loss_fun
         self.font_size = font_size
-        self.headers = ("invar", "truth", "prediction", "relative error")
+        self.headers = ("truth", "prediction", "relative error")
 
     def compare(
         self,
@@ -93,6 +93,59 @@ class GridValidator:
         im.append(ax[1].imshow(target))
         im.append(ax[2].imshow(prediction))
         im.append(ax[3].imshow((prediction - target) / norm["darcy"][1]))
+
+        for ii in range(len(im)):
+            fig.colorbar(im[ii], ax=ax[ii], location="bottom", fraction=0.046, pad=0.04)
+            ax[ii].set_title(self.headers[ii])
+
+        logger.log_figure(figure=fig, artifact_file=f"validation_step_{step:03d}.png")
+
+        return loss
+
+    def compareBES(
+        self,
+        invar: FloatTensor,
+        target: FloatTensor,
+        prediction: FloatTensor,
+        step: int,
+        logger: LaunchLogger,
+    ) -> float:
+        """compares model output, target and plots everything
+
+        Parameters
+        ----------
+        invar : FloatTensor
+            input to model
+        target : FloatTensor
+            ground truth
+        prediction : FloatTensor
+            model output
+        step : int
+            iteration counter
+        logger : LaunchLogger
+            logger to which figure is passed
+
+        Returns
+        -------
+        float
+            validation error
+        """
+        loss = self.criterion(prediction, target)
+        norm = self.norm
+
+        # pick first sample from batch
+        target = target.cpu().numpy()[0, 0, :, :]
+        prediction = prediction.detach().cpu().numpy()[0, 0, :, :]
+        print("predict: ", prediction)
+        print("target: ", target)
+
+        plt.close("all")
+        plt.rcParams.update({"font.size": self.font_size})
+        fig, ax = plt.subplots(1, 3, figsize=(15 * 4, 15), sharey=True)
+        im = []
+        im.append(ax[0].imshow(target))
+        im.append(ax[1].imshow(prediction))
+        im.append(ax[2].imshow(prediction - target))
 
         for ii in range(len(im)):
             fig.colorbar(im[ii], ax=ax[ii], location="bottom", fraction=0.046, pad=0.04)

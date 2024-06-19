@@ -16,38 +16,36 @@
 
 arch:
   decoder:
-    out_features: 1
-    layers: 1
+    layers: 1 
     layer_size: 32
 
   fno:
-    in_channels: 1
-    dimension: 2
-    latent_channels: 32
-    fno_layers: 4
-    fno_modes: 12
-    padding: 9
-
-normaliser:
-  permeability:
-    mean: 1.25
-    std_dev: .75
-  darcy:
-    mean: 4.52E-2
-    std_dev: 2.79E-2
+    dimension: 2 
+    latent_channels: 32 
+    fno_layers: 4 
+    fno_modes: 4 
+    padding: 0 
 
 scheduler:
-  initial_lr: 1.E-3
+  initial_lr: 3.E-3
   decay_rate: .85
   decay_pseudo_epochs: 8
 
 training:
-  resolution: 256
-  batch_size: 64
+  perc_data:  0.998
+  batch_size: 32 
   rec_results_freq : 8
-  max_pseudo_epochs: 256
+  max_pseudo_epochs: 8 
   pseudo_epoch_sample_size: 2048
 
 validation:
+  perc_data: 0.005
   sample_size: 256
   validation_pseudo_epochs: 4
+
+bes:
+  n_channels: 64
+  dataset: './signals_elm_10ts.bin'
+  eventsep: './event_sep_10ts.bin'
+  observation_ts: 6 
+  prediction_ts: 3
